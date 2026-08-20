@@ -25,16 +25,16 @@ What you get over ComfyUI's stock attention on MPS:
 | Flux 1024² joint (H24 D128, 4608) | fp16 | 60 ms | 39 ms | **35 ms** |
 | Hunyuan3D-2 (B2 H16 D64, 3072) | fp16 | 31 ms | 12 ms | **9 ms** |
 | TRELLIS 3D (H16 D64, 20000) | fp16 | 759 ms | 244 ms | **258 ms** |
-| Wan2.1 480p·81f self (H12 D128, 32760) | fp16 | 1877 ms | 1058 ms | **1020 ms** |
-| Wan2.1 480p·81f self (H12 D128, 32760) | bf16 | **631 ms** | 989 ms | 966 ms |
+| Wan2.1 480p·81f self (H12 D128, 32760) | fp16 | 1737 ms | 974 ms | **751 ms** |
+| Wan2.1 480p·81f self (H12 D128, 32760) | bf16 | **644 ms** | 976 ms | 751 ms |
 
 All backends produced correct output on torch 2.13 (verified against a CPU
 fp32 reference). Versus the sub_quad default that ComfyUI picks on Mac,
 mtlattn is ~1.7–3.4× faster in fp16; versus the best native backend per
 shape it's a more modest 1.05–1.35×. The one loss: **bf16** self-attention at
 ≥16k tokens, where MPS's bf16 matmul hits a fast path on M5 that fp16 does
-not — there sub_quad currently wins (~10.4 vs ~6.9 TF/s, an mtlattn kernel
-gap being worked on). On torch ≤ 2.12 the picture shifts further toward
+not — there sub_quad still wins, though mtlattn's TM=16 retune narrowed the
+gap to ~1.17× (~10.2 vs ~8.8 TF/s). On torch ≤ 2.12 the picture shifts further toward
 mtlattn: native SDPA there is ~2.3× slower than 2.13 and corrupts past 2³²
 score elements.
 
