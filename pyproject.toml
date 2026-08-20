@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-mtlattn"
+description = "Fused Metal flash attention for ComfyUI on Apple Silicon — accelerates video / 3D / image DiTs on MPS and avoids the >2^32 MPS SDPA silent-corruption bug."
+version = "0.1.0"
+license = { file = "LICENSE" }
+dependencies = ["mtlattn>=0.4.0"]
+
+[project.urls]
+Repository = "https://github.com/lastowl/ComfyUI-mtlattn"
+
+[tool.comfy]
+PublisherId = "lastowl"
+DisplayName = "ComfyUI-mtlattn"
+Icon = ""
