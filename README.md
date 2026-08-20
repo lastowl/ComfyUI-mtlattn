@@ -24,7 +24,7 @@ What you get over ComfyUI's stock attention on MPS:
 | SDXL 1024² self (B2 H10 D64, 4096) | fp16 | 34 ms | 13 ms | **10 ms** |
 | Flux 1024² joint (H24 D128, 4608) | fp16 | 60 ms | 39 ms | **35 ms** |
 | Hunyuan3D-2 (B2 H16 D64, 3072) | fp16 | 31 ms | 12 ms | **9 ms** |
-| TRELLIS 3D (H16 D64, 20000) | fp16 | 759 ms | 244 ms | **258 ms** |
+| TRELLIS 3D (H16 D64, 20000) | fp16 | 757 ms | 238 ms | **176 ms** |
 | Wan2.1 480p·81f self (H12 D128, 32760) | fp16 | 1737 ms | 974 ms | **751 ms** |
 | Wan2.1 480p·81f self (H12 D128, 32760) | bf16 | **644 ms** | 976 ms | 751 ms |
 
