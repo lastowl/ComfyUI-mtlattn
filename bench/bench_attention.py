@@ -51,8 +51,9 @@ CHECK_ROWS = 64
 
 
 def to_cpu32(t):
-    # Two steps on purpose: the fused .to("cpu", torch.float32) of an MPS
-    # slice can silently return wrong values (found while writing this bench).
+    # Two steps on purpose: the fused .to("cpu", torch.float32) of an offset
+    # MPS view silently returns wrong values on torch <= 2.13 (found while
+    # writing this bench; see mtlattn's tests/test_mps_fused_to_bug.py).
     return t.to("cpu").to(torch.float32)
 
 
