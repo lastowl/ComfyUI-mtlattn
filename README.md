@@ -39,6 +39,23 @@ window (155 vs 139 ms). On torch ≤ 2.12 the picture shifts further toward
 mtlattn: native SDPA there is ~2.3× slower than 2.13 and corrupts past 2³²
 score elements.
 
+### End to end
+
+Wan 2.1 T2V 1.3B in a real ComfyUI workflow on the M5 Pro (832×480, 81 frames,
+4 steps, ComfyUI's default fp16 on MPS), sampling time from the server's own
+execution timestamps:
+
+| | per step | 4-step run |
+|---|---|---|
+| ComfyUI default (sub_quad) | 114 s | 453 s |
+| **Apply mtlattn Attention** | **48 s** | **193 s** |
+
+**2.35× faster end to end**, outputs matching the stock backend to 0.8%
+relative L2 in latent space (each backend bit-reproducible run to run; frames
+decode normally). Attention is the bulk of a video DiT's step at 32.7k tokens,
+so most of the per-call gain survives — the untouched VAE/MLP/text-encoder
+work is what separates this from the 2.7× per-call figure.
+
 ## Install
 
 ```bash
