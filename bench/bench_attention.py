@@ -1,4 +1,4 @@
-"""Benchmark ComfyUI's pytorch attention vs the mtlattn backend at real
+"""Benchmark ComfyUI's attention backends vs this pack's routing at real
 model shapes (image / video / 3D generation on Mac).
 
 Run from anywhere with the ComfyUI venv python:
@@ -35,6 +35,9 @@ from mtlattn_attention import attention_mtlattn, mpp_available  # noqa: E402
 # name, B, heads, head_dim, Nq, Nkv, dtype
 SHAPES = [
     ("SD1.5 512p self d40",       2,  8,  40,  4096,  4096, torch.float16),
+    ("SD1.5 1024p self d80",      2,  8,  80,  4096,  4096, torch.float16),
+    ("SD1.5 1024p self d160",     2,  8, 160,  1024,  1024, torch.float16),
+    ("Hunyuan-DiT self d88",      2, 16,  88,  4096,  4096, torch.float16),
     ("SDXL 1024p self",           2, 10,  64,  4096,  4096, torch.float16),
     ("Flux 1024p joint",          1, 24, 128,  4608,  4608, torch.float16),
     ("Hunyuan3D-2 dit",           2, 16,  64,  3072,  3072, torch.float16),
@@ -52,8 +55,7 @@ CHECK_ROWS = 64
 
 def to_cpu32(t):
     # Two steps on purpose: the fused .to("cpu", torch.float32) of an offset
-    # MPS view silently returns wrong values on torch <= 2.13 (found while
-    # writing this bench; see mtlattn's tests/test_mps_fused_to_bug.py).
+    # MPS view silently returns wrong values on torch <= 2.13 (fixed in 2.14).
     return t.to("cpu").to(torch.float32)
 
 
@@ -86,7 +88,7 @@ def time_backend(fn, q, k, v, heads):
 BACKENDS = [
     ("sub_quad", attention_sub_quad),        # ComfyUI's default on MPS
     ("pytorch", attention_pytorch),          # native MPS SDPA
-    ("mtlattn", lambda q, k, v, h: attention_mtlattn(q, k, v, h, min_seqlen=0)),
+    ("node", lambda q, k, v, h: attention_mtlattn(q, k, v, h, min_seqlen=0)),
 ]
 
 
@@ -130,7 +132,7 @@ def run():
                 row[label] = (None, type(e).__name__[:9])
             torch.mps.empty_cache()
 
-        tm = row["mtlattn"][0]
+        tm = row["node"][0]
         # speedup vs the fastest native backend that produced a CORRECT result
         native_ok = [t for lbl in ("sub_quad", "pytorch")
                      for t, e in [row[lbl]]
@@ -143,7 +145,7 @@ def run():
             speed = f"{'-':>9}"
         tflops = f"{flops / tm / 1e12:6.1f}" if isinstance(tm, float) else f"{'-':>6}"
         over = "*" if score_elems > 2 ** 32 else " "
-        print(f"{name:<27}{str(dtype).split('.')[1][:4]:<5}"
+        print(f"{name:<27}{({torch.float16: 'fp16', torch.bfloat16: 'bf16'}.get(dtype, 'fp32')):<5}"
               f"{score_elems / 2**32:6.1f}x{over}"
               + "".join(fmt_t(row[lbl][0]) for lbl, _ in BACKENDS)
               + f"{speed}{tflops}  "
@@ -151,7 +153,8 @@ def run():
 
     print("\nelems = score-matrix elements B*H*Nq*Nkv as a multiple of 2^32;")
     print("* = past the MPS SDPA silent-corruption threshold (pytorch#179352).")
-    print("speedup = mtlattn vs fastest native backend with a correct result.")
+    print("node = this pack's routing (native SDPA, mtlattn or ComfyUI default per call);")
+    print("speedup = node vs fastest native backend with a correct result.")
     print("err flags '!' when > 0.1 (fp16/bf16 rounding is ~0.01; O(1) = corrupt).")
 
 
